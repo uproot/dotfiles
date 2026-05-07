@@ -15,11 +15,21 @@ in
     libsecret        # D-Bus client lib for gnome-keyring
     seahorse         # GUI keyring manager
     networkmanagerapplet # nm-connection-editor for advanced WiFi from settings
-    swww             # Wayland wallpaper daemon
+    awww             # Wayland wallpaper daemon
+
+    (pkgs.writeShellScriptBin "screenshot-full" ''
+      grim - | wl-copy && notify-send -a "Screenshot" "Full screen" "Copied to clipboard"
+    '')
+    (pkgs.writeShellScriptBin "screenshot-region" ''
+      grim -g "$(slurp -d -c '#c8d2ffdd' -b '#00000066' -s '#c8d2ff11')" - | wl-copy && notify-send -a "Screenshot" "Region" "Copied to clipboard"
+    '')
   ];
 
   # Ensure screenshot output directory exists
   home.file."Pictures/Screenshots/.keep".text = "";
+
+  # NOTE: ~/.background-image is created by gnome/dconf.nix (out-of-store
+  # symlink to ~/dotfiles/assets/wallpaper.png), used by both GNOME and hyprlock.
 
 
   services.hypridle = {

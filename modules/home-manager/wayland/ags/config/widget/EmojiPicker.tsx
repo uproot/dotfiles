@@ -8,7 +8,7 @@ import { closeOnUnfocus } from "./autoClose"
 
 async function copy(text: string) {
   try {
-    await execAsync(["sh", "-c", `printf '%s' '${text.replace(/'/g, "'\\''")}' | wl-copy`])
+    await execAsync(["bash", "-c", `printf '%s' '${text.replace(/'/g, "'\\''")}' | wl-copy > /dev/null 2>&1`])
   } catch (e) {
     console.error(e)
   }

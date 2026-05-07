@@ -31,9 +31,12 @@ in
         "wl-paste --type text --watch cliphist store"
         "wl-paste --type image --watch cliphist store"
 
+        # Desktop shell
+        "ags run"
+
         # Initialize Wallpaper Daemon
-        "swww-daemon"
-        "sleep 1 && swww img ~/dotfiles/assets/wallpaper.png --transition-type fade"
+        "awww-daemon"
+        "bash -c 'sleep 2 && awww img ~/.background-image --transition-type fade'"
       ];
 
       general = {
@@ -103,11 +106,6 @@ in
         touchpad.natural_scroll = true;
       };
 
-      gesture = [
-        "3, horizontal, workspace"
-        "4, horizontal, workspace"
-      ];
-
       misc = {
         disable_hyprland_logo = true;
         disable_splash_rendering = true;
@@ -123,14 +121,6 @@ in
         "4, monitor:DP-3"
         "5, monitor:DP-3"
         "6, monitor:DP-1, persistent:true, default:true"
-      ];
-
-      windowrule = [
-        "float 1, match:class ^(org.gnome.Calculator)$"
-        "float 1, match:class ^(nm-connection-editor)$"
-        "float 1, match:class ^(pavucontrol)$"
-        "float 1, match:title ^(Picture-in-Picture)$"
-        "pin 1, match:title ^(Picture-in-Picture)$"
       ];
 
       bind = [
@@ -191,8 +181,8 @@ in
         "$mod, mouse_up, workspace, m-1"
 
         # Screenshots: Shift+Print → fullscreen, Super+Shift+S → quick region
-        ''SHIFT, Print, exec, sh -c 'grim - | wl-copy && notify-send -a "Screenshot" "Full screen" "Copied to clipboard"' ''
-        ''$mod SHIFT, S, exec, sh -c 'grim -g "$(slurp -d -c \#c8d2ffdd -b \#00000066 -s \#c8d2ff11)" - | wl-copy && notify-send -a "Screenshot" "Region" "Copied to clipboard"' ''
+        "SHIFT, Print, exec, screenshot-full"
+        "$mod SHIFT, S, exec, screenshot-region"
       ];
 
       bindm = [

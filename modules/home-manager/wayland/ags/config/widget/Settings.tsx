@@ -321,13 +321,18 @@ function QuickGrid() {
     if (w) w.visible = !w.visible
   }
   const screenshot = async () => {
+    // Close settings panel first so it's not captured
+    const settingsWin = app.get_window("settings")
+    if (settingsWin) settingsWin.visible = false
+
+    // Small delay to let the panel animate out
+    await new Promise((r) => setTimeout(r, 200))
+
     try {
-      // Close settings panel first so it's not captured
-      const settingsWin = app.get_window("settings")
-      if (settingsWin) settingsWin.visible = false
-      
-      const { triggerScreenshot } = await import("./Screenshot")
-      triggerScreenshot()
+      await execAsync([
+        "sh", "-c",
+        'grim -g "$(slurp -d -c \\#c8d2ffdd -b \\#00000066 -s \\#c8d2ff11)" - | wl-copy && notify-send -a "Screenshot" "Region" "Copied to clipboard"',
+      ])
     } catch {}
   }
   return (

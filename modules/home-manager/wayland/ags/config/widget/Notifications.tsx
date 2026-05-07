@@ -171,30 +171,33 @@ export function NotificationToasts() {
 	return (
 		<window
 			$={(self) => (win = self)}
-			visible
+			visible={toasts((ts) => ts.length > 0)}
 			name="notification-toasts"
 			namespace="ags-toasts"
 			anchor={Astal.WindowAnchor.TOP | Astal.WindowAnchor.RIGHT}
-			marginTop={8}
+			marginTop={52}
 			marginRight={12}
+			layer={Astal.Layer.OVERLAY}
 			application={app}
 			class="Popup ToastLayer"
 			keymode={Astal.Keymode.NONE}
 		>
-			<box
-				orientation={Gtk.Orientation.VERTICAL}
-				spacing={8}
-				widthRequest={360}
-				cssClasses={["ToastStack"]}
-			>
-				<For each={toasts}>
-					{(t) => (
-						<box class="ToastWrap" cssClasses={["ToastWrap"]}>
-							<NotifCard n={t.notif} compact />
-						</box>
-					)}
-				</For>
-			</box>
+			<With value={toasts}>
+				{(ts: Toast[]) => (
+					<box
+						orientation={Gtk.Orientation.VERTICAL}
+						spacing={8}
+						widthRequest={360}
+						cssClasses={["ToastStack"]}
+					>
+						{ts.map((t) => (
+							<box cssClasses={["ToastWrap"]}>
+								<NotifCard n={t.notif} compact />
+							</box>
+						))}
+					</box>
+				)}
+			</With>
 		</window>
 	);
 }
@@ -232,8 +235,9 @@ export function NotificationCenter() {
 			namespace="ags-noticenter"
 			visible={false}
 			keymode={Astal.Keymode.ON_DEMAND}
+			layer={Astal.Layer.OVERLAY}
 			anchor={Astal.WindowAnchor.TOP}
-			marginTop={8}
+			marginTop={52}
 			application={app}
 			class="Popup NotificationCenter"
 		>
@@ -315,7 +319,7 @@ export function NotificationCenter() {
 								hscrollbarPolicy={Gtk.PolicyType.NEVER}
 							>
 								<box orientation={Gtk.Orientation.VERTICAL} spacing={8}>
-									<For each={list}>{(n) => <NotifCard n={n} />}</For>
+									{items.map((n) => <NotifCard n={n} />)}
 								</box>
 							</Gtk.ScrolledWindow>
 						)

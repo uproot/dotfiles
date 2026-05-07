@@ -43,7 +43,7 @@ When adding a new module, drop it in the appropriate subtree and add it to that 
 
 `modules/home-manager/wayland/` is a self-contained desktop shell:
 
-- `hyprland.nix` — Hyprland config. `$term = alacritty`, `$browser = chromium`, `$fileManager = nautilus`. `exec-once` starts `hyprpaper`, `qs` (Quickshell — see migration note below), and two `wl-paste`/`cliphist` watchers. The tap-Super keybind (`bindr`) talks to AGS via `ags request 'toggle launcher'`.
+- `hyprland.nix` — Hyprland config. `$term = alacritty`, `$browser = chromium`, `$fileManager = nautilus`. `exec-once` starts `swww-daemon` (wallpaper daemon) with a fade transition to `assets/wallpaper.png`, `gnome-keyring-daemon`, and two `wl-paste`/`cliphist` watchers. The tap-Super keybind (`bindr`) talks to AGS via `ags request 'toggle launcher'`.
 - `palette.nix` — single source of truth for colors (monochrome black/white). Imported by `hyprland.nix` and the AGS SCSS. **Edit colors here, not in individual modules.**
 - `ags/default.nix` — wires `programs.ags` (from the `ags` flake input) and lists the Astal sub-packages (`hyprland`, `tray`, `wireplumber`, `mpris`, `network`, `notifd`, `apps`, `battery`, `io`) that the TS code is allowed to import. Adding a new Astal binding requires adding it here too.
 - `ags/config/` — the AGS v3 TypeScript/JSX shell (GTK4). `app.tsx` is the entry point; widgets live under `widget/`. JSX uses `jsxImportSource: "ags/gtk4"`. There is no separate build step — AGS compiles on launch from the home-manager-installed `configDir`.

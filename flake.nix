@@ -23,7 +23,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Kept (disabled in HM) for now while we migrate to Quickshell.
+    # Astal libraries used by the AGS desktop shell
     astal = {
       url = "github:aylur/astal";
       inputs.nixpkgs.follows = "nixpkgs";

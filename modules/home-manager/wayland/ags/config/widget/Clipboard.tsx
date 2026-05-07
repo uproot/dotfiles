@@ -32,11 +32,9 @@ async function refresh(): Promise<Entry[]> {
 
 async function copyEntry(id: string) {
   try {
-    const decoded = await execAsync(["sh", "-c", `cliphist decode <<<'${id.replace(/'/g, "'\\''")}' | wl-copy`])
-    return decoded
+    await execAsync(["bash", "-c", `cliphist decode <<<'${id.replace(/'/g, "'\\''")}' | wl-copy > /dev/null 2>&1`])
   } catch (e) {
     console.error(e)
-    return ""
   }
 }
 
