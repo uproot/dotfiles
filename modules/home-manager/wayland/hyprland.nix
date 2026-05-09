@@ -143,6 +143,8 @@ in
       #      the fallback short-circuits; when it's down only the fallback
       #      runs (fuzzel / cliphist / brightnessctl / our screenshot scripts).
       bind = [
+        "SUPER, D, global, quickshell:searchToggle"
+
         # ── Window mgmt ────────────────────────────────────────────────
         "$mod, Q, killactive,"
         "$mod SHIFT, E, exit,"
@@ -191,8 +193,6 @@ in
         "$launch, B, exec, $browser"
 
         # ── Quickshell shell — one-shot toggles ────────────────────────
-        "$mod,        A,      global, quickshell:sidebarLeftToggle"
-        "$mod,        N,      global, quickshell:sidebarRightToggle"
         "$mod,        slash,  global, quickshell:cheatsheetToggle"
         "$mod,        M,      global, quickshell:mediaControlsToggle"
         "$mod,        J,      global, quickshell:barToggle"
@@ -237,12 +237,6 @@ in
       bindm = [
         "$mod, mouse:272, movewindow"
         "$mod, mouse:273, resizewindow"
-      ];
-
-      bindr = [
-        # Tap-Super → launcher (Quickshell `search` panel).  Falls back to
-        # fuzzel if Quickshell isn't running.
-        "SUPER, SUPER_L, global, quickshell:searchToggleRelease"
       ];
 
       bindel = [
