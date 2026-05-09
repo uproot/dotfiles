@@ -154,6 +154,13 @@ in
         sha256 = "sha256-WPzierXLQM+HdVb0XAx80f4Fdd34Vf7WbFzFapr5VHE=";
       })
 
+      (pkgs.vscode-utils.extensionFromVscodeMarketplace {
+        name = "qt-core";
+        publisher = "TheQtCompany";
+        version = "1.13.0";
+        sha256 = "sha256-/SAoJmKfOfLtbYn4jvtbAFIa6O7kDouv0xQVhnxFOKM=";
+      })
+
       # HTML/CSS
       formulahendry.auto-rename-tag
       naumovs.color-highlight

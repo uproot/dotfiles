@@ -1,0 +1,20 @@
+{
+  // Extensions VSCode/Cursor will offer to install when this repo is opened.
+  // Most are already pre-installed via home-manager
+  // (modules/home-manager/development/vscode.nix); listing them here keeps
+  // the workspace self-contained for users on a different VSCode setup.
+  "recommendations": [
+    // Qt / QML — needed to edit the vendored Quickshell shell
+    "TheQtCompany.qt-qml",
+
+    // Nix — primary system language
+    "jnoortheen.nix-ide",
+    "mkhl.direnv",
+
+    // Quality of life
+    "usernamehw.errorlens",
+    "eamodio.gitlens",
+    "mhutchie.git-graph",
+    "gruntfuggly.todo-tree"
+  ]
+}

@@ -8,6 +8,8 @@ _:
     ./development
     ./shell.nix
     ./apps
+    ./wayland
+    ./terminals
   ];
 
   home = {

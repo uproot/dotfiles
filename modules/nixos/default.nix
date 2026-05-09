@@ -7,6 +7,7 @@ _:
     ./locale.nix
     ./audio.nix
     ./gnome.nix
+    ./hyprland.nix
     ./users.nix
     ./nix.nix
     ./nvidia.nix

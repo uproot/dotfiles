@@ -22,6 +22,14 @@
       url = "github:Lxtharia/minegrub-world-sel-theme";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Quickshell — pinned to the rev that end-4/dots-hyprland tests against
+    # (`sdata/dist-nix/home-manager/flake.nix`).  Bump deliberately when you
+    # also bump the vendored ./modules/home-manager/wayland/quickshell/ii.
+    quickshell = {
+      url = "git+https://git.outfoxxed.me/quickshell/quickshell?rev=7511545ee20664e3b8b8d3322c0ffe7567c56f7a";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = { nixpkgs, home-manager, claude-code, nur, nix-index-database, ... }@inputs: {
@@ -47,6 +55,7 @@
           home-manager = {
             useGlobalPkgs = true;
             useUserPackages = true;
+            extraSpecialArgs = { inherit inputs; };
             users.user = import ./modules/home-manager;
             sharedModules = [ nix-index-database.homeModules.nix-index ];
           };
