@@ -30,6 +30,7 @@ let
 
     nativeBuildInputs = [ pkgs.makeWrapper pkgs.qt6.wrapQtAppsHook ];
     buildInputs = with pkgs; [
+      matugen
       qs
       kdePackages.qtwayland
       kdePackages.qtpositioning
@@ -201,6 +202,8 @@ in
     libsoup_3
     libportal-gtk4
     gobject-introspection
+
+    upscayl
 
     # ── Translation / accessibility ─────────────────────────────────
     translate-shell
