@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 sudo nixos-rebuild switch --flake .#computer   # apply system + home-manager
 sudo nixos-rebuild test   --flake .#computer   # try without making it the default boot entry
 nix flake update                                # bump all inputs
-nix flake update <input>                        # bump one input (e.g. nixpkgs, ags, quickshell)
+nix flake update <input>                        # bump one input (e.g. nixpkgs, quickshell)
 
 nix run nixpkgs#statix -- check .              # lint Nix
 nix run nixpkgs#nixpkgs-fmt -- .               # format Nix
@@ -22,7 +22,9 @@ There is one NixOS configuration: `nixosConfigurations.computer` (single host, `
 
 ### Flake composition (`flake.nix`)
 
-The flake passes `inputs` through `specialArgs` / `extraSpecialArgs`, so any module can take `{ inputs, ... }` and reach things like `inputs.astal.packages.${pkgs.system}` or `inputs.ags.homeManagerModules.default` directly. All third-party inputs use `inputs.nixpkgs.follows = "nixpkgs"` to keep the closure small — preserve that when adding inputs.
+The flake passes `inputs` through `specialArgs` / `extraSpecialArgs`, so any module can take `{ inputs, ... }` and reach things like `inputs.quickshell.packages.${pkgs.system}.default` directly. All third-party inputs use `inputs.nixpkgs.follows = "nixpkgs"` to keep the closure small — preserve that when adding inputs.
+
+The `quickshell` input is **rev-pinned** to the commit end-4/dots-hyprland tests against (see `flake.nix` comment). Bump it in lockstep with the vendored `modules/home-manager/wayland/quickshell/ii/` tree, otherwise the QML may reference modules that don't exist in the runtime.
 
 Three overlays are applied at the top level:
 - `claude-code.overlays.default` (from `claude-code-nix`) — provides `pkgs.claude-code`.
@@ -39,19 +41,19 @@ Home-manager runs as a NixOS module (`useGlobalPkgs = true; useUserPackages = tr
 
 When adding a new module, drop it in the appropriate subtree and add it to that subtree's `default.nix` barrel — there is no auto-discovery.
 
-### Wayland session (Hyprland + AGS)
+### Wayland session (Hyprland + Quickshell)
 
 `modules/home-manager/wayland/` is a self-contained desktop shell:
 
-- `hyprland.nix` — Hyprland config. `$term = alacritty`, `$browser = chromium`, `$fileManager = nautilus`. `exec-once` starts `swww-daemon` (wallpaper daemon) with a fade transition to `assets/wallpaper.png`, `gnome-keyring-daemon`, and two `wl-paste`/`cliphist` watchers. The tap-Super keybind (`bindr`) talks to AGS via `ags request 'toggle launcher'`.
-- `palette.nix` — single source of truth for colors (monochrome black/white). Imported by `hyprland.nix` and the AGS SCSS. **Edit colors here, not in individual modules.**
-- `ags/default.nix` — wires `programs.ags` (from the `ags` flake input) and lists the Astal sub-packages (`hyprland`, `tray`, `wireplumber`, `mpris`, `network`, `notifd`, `apps`, `battery`, `io`) that the TS code is allowed to import. Adding a new Astal binding requires adding it here too.
-- `ags/config/` — the AGS v3 TypeScript/JSX shell (GTK4). `app.tsx` is the entry point; widgets live under `widget/`. JSX uses `jsxImportSource: "ags/gtk4"`. There is no separate build step — AGS compiles on launch from the home-manager-installed `configDir`.
-- `services.nix` — adjacent Wayland services (hyprlock, hyprpaper, etc.).
+- `hyprland.nix` — Hyprland config. `$term = alacritty`, `$browser = chromium`, `$fileManager = nautilus`. `exec-once` starts `qs -c ii` (the Quickshell shell), `awww-daemon` (wallpaper) with a fade transition to `assets/wallpaper.png`, `gnome-keyring-daemon`, and two `wl-paste`/`cliphist` watchers. Shell-aware binds use `bind = …, global, quickshell:<shortcutName>` paired with `exec` fallbacks gated on `qs -c ii ipc call TEST_ALIVE` so they degrade to `fuzzel`/`cliphist`/`brightnessctl` when the shell isn't running.
+- `palette.nix` — single source of truth for hyprland/hyprlock colors (monochrome black/white). Imported by `hyprland.nix` and `services.nix`. The Quickshell shell has its own theme system driven by matugen; edit `~/.config/illogical-impulse/config.json` (or the in-shell settings UI) for shell colors. **For Hyprland-side colors, edit `palette.nix`, not individual modules.**
+- `quickshell/default.nix` — home-manager wiring. Wraps `inputs.quickshell.packages.<sys>.default` with the Qt plugins end-4's QML imports, then assembles `~/.config/quickshell/ii/` as out-of-store symlinks pointing back into this directory (so QML edits hot-reload from the working tree). Also installs all runtime deps the shell shells out to (matugen, fuzzel, hyprshot, hyprpicker, wlogout, songrec, tesseract, libqalculate, …).
+- `quickshell/shell.qml` — OUR custom shell entry. At runtime it overlays end-4's `ii/shell.qml` (the original is preserved as `~/.config/quickshell/ii/shell.upstream.qml`). Trim panel families or wire in custom imports here.
+- `quickshell/ii/` — vendored `dots/.config/quickshell/ii/` from `github:end-4/dots-hyprland`. Edit it directly; nothing in here is built from a flake input. Bump in lockstep with the `quickshell` input rev-pin in `flake.nix`.
+- `quickshell/overrides/` — drop QML files here for selective component overrides (mounted as `~/.config/quickshell/ii/overrides/`).
+- `services.nix` — adjacent Wayland services (`hypridle`, `hyprlock`, screenshot scripts, awww wallpaper daemon).
 
-Inter-process control: `app.tsx` registers a `requestHandler` that accepts `toggle <window-name>`. To trigger UI from elsewhere (Hyprland binds, scripts), use `ags request 'toggle <name>'` rather than spawning new processes.
-
-Note on the in-flight migration: `flake.nix` carries both `astal`/`ags` and `quickshell` inputs. AGS is the active shell on this branch (`hyprland-astal`); Quickshell is staged for a future swap (`exec-once = [ ... "qs" ... ]` already starts it). When changing shell behavior, prefer editing the AGS config unless the task is specifically about the Quickshell migration.
+Inter-process control: shell-side `IpcHandler` and `GlobalShortcut` blocks accept `qs -c ii ipc call <target> <fn>` and `bind = …, global, quickshell:<name>` from Hyprland. IPC targets live in `quickshell/ii/services/*.qml` and the per-panel-family modules. To wire a new bind, prefer the `global, quickshell:<name>` form (registered via `GlobalShortcut { name: ... }` in QML) over spawning a new process — see existing examples in `hyprland.nix`.
 
 ### Terminals
 

@@ -22,4 +22,8 @@
     gnome-music
     gnome-characters
   ];
+
+  environment.systemPackages = with pkgs; [
+    zenity
+  ];
 }

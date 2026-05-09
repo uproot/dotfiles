@@ -2,4 +2,3 @@ result
 result-*
 .direnv/
 .gemini/
-modules/home-manager/wayland/ags/config/@girs/

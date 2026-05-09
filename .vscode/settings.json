@@ -1,0 +1,61 @@
+{
+  // Workspace settings for editing the vendored Quickshell shell.
+  // User-level settings come from home-manager (modules/home-manager/development/vscode.nix);
+  // anything project-specific lives here.
+
+  // ── QML / Qt ─────────────────────────────────────────────────────
+  // qt-qml extension reads these to drive qmlls's import resolution.
+  // System Qt6 + Quickshell modules come in via QML_IMPORT_PATH (set in
+  // modules/home-manager/wayland/quickshell/default.nix).  Project-relative
+  // imports (the vendored ii/ tree, our overrides/) go here.
+  "qt-qml.qmlls.useQmlImportPathEnvVar": true,
+  "qt-qml.qmlls.extraImportPaths": [
+    "${workspaceFolder}/modules/home-manager/wayland/quickshell/ii",
+    "${workspaceFolder}/modules/home-manager/wayland/quickshell/ii/modules",
+    "${workspaceFolder}/modules/home-manager/wayland/quickshell"
+  ],
+  "qt-qml.qmlls.disableCMakeCalls": true,
+
+  // qmlformat as the QML formatter.
+  "[qml]": {
+    "editor.defaultFormatter": "TheQtCompany.qt-qml",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 4
+  },
+
+  // ── File associations ────────────────────────────────────────────
+  "files.associations": {
+    "*.qml": "qml",
+    "qmldir": "ini",
+    "*.qrc": "xml",
+    "*.pro": "qmake",
+    "*.pri": "qmake"
+  },
+
+  // ── Search / file watcher noise reduction ────────────────────────
+  // The vendored ii/ tree is large; exclude generated translation JSON
+  // and assets from search but keep them indexed for go-to-definition.
+  "search.exclude": {
+    "**/result": true,
+    "**/result-*": true,
+    "modules/home-manager/wayland/quickshell/ii/translations/*.json": true,
+    "modules/home-manager/wayland/quickshell/ii/assets/icons/**": true
+  },
+  "files.watcherExclude": {
+    "**/result/**": true,
+    "**/result-*/**": true,
+    "modules/home-manager/wayland/quickshell/ii/assets/icons/**": true
+  },
+
+  // ── Nix ──────────────────────────────────────────────────────────
+  "nix.serverPath": "nixd",
+  "nix.formatterPath": "nixpkgs-fmt",
+
+  // ── Editor (project overrides) ───────────────────────────────────
+  // Match nixpkgs-fmt's 2-space indent for Nix files.
+  "[nix]": {
+    "editor.tabSize": 2,
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "jnoortheen.nix-ide"
+  }
+}

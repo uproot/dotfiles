@@ -8,11 +8,6 @@ in
     systemd.variables = [ "--all" ];
 
     settings = {
-      monitor = [
-        "DP-3, 1920x1080@165, 1920x0, 1"
-        "DP-1, 1920x1080@60, 0x0, 1"
-      ];
-
       "$mod" = "SUPER";
       "$launch" = "ALT";
       "$term" = "alacritty";
@@ -20,10 +15,19 @@ in
       "$fileManager" = "nautilus";
 
       env = [
+        # Cursor + GTK theme match the user's GNOME session
+        # (modules/home-manager/gnome/dconf.nix sets the same values), so the
+        # look stays consistent across both compositors.
         "XCURSOR_THEME,phinger-cursors-dark"
         "XCURSOR_SIZE,24"
         "GTK_THEME,Adwaita-dark"
         "QT_QPA_PLATFORMTHEME,gtk3"
+        "QT_QPA_PLATFORM,wayland;xcb"
+        "ELECTRON_OZONE_PLATFORM_HINT,auto"
+        # Quickshell's matugen pipeline calls into a uv-managed venv at this
+        # path on first run.  Stored as `~` because the shell scripts that
+        # consume this var pipe it through `eval echo`, which expands tildes.
+        "ILLOGICAL_IMPULSE_VIRTUAL_ENV,~/.local/state/quickshell/.venv"
       ];
 
       exec-once = [
@@ -31,12 +35,9 @@ in
         "wl-paste --type text --watch cliphist store"
         "wl-paste --type image --watch cliphist store"
 
-        # Desktop shell
-        "ags run"
-
-        # Initialize Wallpaper Daemon
-        "awww-daemon"
-        "bash -c 'sleep 2 && awww img ~/.background-image --transition-type fade'"
+        # Desktop shell — vendored end-4/dots-hyprland under
+        # modules/home-manager/wayland/quickshell/, exposed as the `ii` config.
+        "qs -c ii"
       ];
 
       general = {
@@ -114,31 +115,48 @@ in
         enable_swallow = true;
       };
 
-      workspace = [
-        "1, monitor:DP-3, persistent:true, default:true"
-        "2, monitor:DP-3, persistent:true"
-        "3, monitor:DP-3, persistent:true"
-        "4, monitor:DP-3"
-        "5, monitor:DP-3"
-        "6, monitor:DP-1, persistent:true, default:true"
+      monitor = [
+        "DP-1, 1920x1080@60,  0x0,    1"
+        "DP-3, 1920x1080@165, 1920x0, 1"
+        # Fallback for any other monitor (e.g. laptop panel) that gets attached later
+        ", preferred, auto, 1"
       ];
 
+      # One workspace pinned to the leftmost monitor (DP-1); the rest live on DP-3.
+      # `default:true` ensures the workspace is materialized on its monitor at startup;
+      # `persistent:true` keeps it alive even when empty so the bar always shows it.
+      workspace = [
+        "1, monitor:DP-1, default:true,  persistent:true"
+        "2, monitor:DP-3, default:true,  persistent:true"
+        "3, monitor:DP-3, persistent:true"
+        "4, monitor:DP-3, persistent:true"
+        "5, monitor:DP-3, persistent:true"
+        "6, monitor:DP-3, persistent:true"
+      ];
+      # Bindings are organised in three layers:
+      #   1. Window/workspace management (compositor-only, no shell deps).
+      #   2. Application launchers (`$launch` = ALT, distinct from `$mod` so
+      #      they never collide with Quickshell shell binds).
+      #   3. Quickshell shell binds — paired via the `global, quickshell:<name>`
+      #      mechanism with `exec` fallbacks gated on `qs -c ii ipc call
+      #      TEST_ALIVE`.  When the shell is up the global handler fires and
+      #      the fallback short-circuits; when it's down only the fallback
+      #      runs (fuzzel / cliphist / brightnessctl / our screenshot scripts).
       bind = [
-        "$launch, T, exec, $term"
+        # ── Window mgmt ────────────────────────────────────────────────
         "$mod, Q, killactive,"
         "$mod SHIFT, E, exit,"
-        "$launch, E, exec, $fileManager"
-        "$launch, B, exec, $browser"
         "$mod, F, fullscreen,"
         "$mod, L, exec, hyprlock"
         "$mod, P, pseudo,"
-        "$mod, J, togglesplit,"
+        "$mod, I, togglesplit,"
         "$mod, Space, togglefloating,"
+        "$mod SHIFT, C, centerwindow,"
 
-        "$mod, left, movefocus, l"
+        "$mod, left,  movefocus, l"
         "$mod, right, movefocus, r"
-        "$mod, up, movefocus, u"
-        "$mod, down, movefocus, d"
+        "$mod, up,    movefocus, u"
+        "$mod, down,  movefocus, d"
 
         "$mod SHIFT, h, movewindow, l"
         "$mod SHIFT, l, movewindow, r"
@@ -149,19 +167,6 @@ in
         "$mod CTRL, l, resizeactive,  40 0"
         "$mod CTRL, k, resizeactive,  0 -40"
         "$mod CTRL, j, resizeactive,  0  40"
-
-        "$mod SHIFT, C, centerwindow,"
-
-        "$mod, a, workspace, m-1"
-        "$mod, d, workspace, m+1"
-
-        "$mod SHIFT, a, movetoworkspace, m-1"
-        "$mod SHIFT, d, movetoworkspace, m+1"
-
-        "$mod, S, exec, ags request toggle settings"
-        "$mod, N, exec, ags request toggle notification-center"
-        "$mod, V, exec, ags request toggle clipboard"
-        "$mod, period, exec, ags request toggle emoji"
 
         "$mod, 1, workspace, 1"
         "$mod, 2, workspace, 2"
@@ -177,12 +182,56 @@ in
         "$mod SHIFT, 5, movetoworkspace, 5"
         "$mod SHIFT, 6, movetoworkspace, 6"
 
-        "$mod, mouse_down, workspace, m+1"
-        "$mod, mouse_up, workspace, m-1"
+        "$mod, mouse_down, workspace, e+1"
+        "$mod, mouse_up,   workspace, e-1"
 
-        # Screenshots: Shift+Print → fullscreen, Super+Shift+S → quick region
+        # ── App launchers (distinct mod prefix to avoid shell conflicts) ─
+        "$launch, T, exec, $term"
+        "$launch, E, exec, $fileManager"
+        "$launch, B, exec, $browser"
+
+        # ── Quickshell shell — one-shot toggles ────────────────────────
+        "$mod,        A,      global, quickshell:sidebarLeftToggle"
+        "$mod,        N,      global, quickshell:sidebarRightToggle"
+        "$mod,        slash,  global, quickshell:cheatsheetToggle"
+        "$mod,        M,      global, quickshell:mediaControlsToggle"
+        "$mod,        J,      global, quickshell:barToggle"
+        "$mod,        G,      global, quickshell:overlayToggle"
+        "$mod,        K,      global, quickshell:oskToggle"
+        "$mod,        Tab,    global, quickshell:overviewWorkspacesToggle"
+        "Ctrl Alt,    Delete, global, quickshell:sessionToggle"
+        "Ctrl $mod,   T,      global, quickshell:wallpaperSelectorToggle"
+        "Ctrl $mod Alt, T,    global, quickshell:wallpaperSelectorRandom"
+        "Ctrl $mod,   P,      global, quickshell:panelFamilyCycle"
+        "Ctrl $mod,   R,      exec,   killall qs quickshell; qs -c ii &"
+
+        # Standalone settings window (Quickshell loads `settings.qml`).
+        "$mod, S, exec, qs -p ~/.config/quickshell/ii/settings.qml"
+
+        # ── Quickshell shell — overview tabs (with fuzzel/cliphist fallbacks) ─
+        "$mod, V, global, quickshell:overviewClipboardToggle"
+        "$mod, V, exec, qs -c ii ipc call TEST_ALIVE || pkill fuzzel || cliphist list | fuzzel --match-mode fzf --dmenu | cliphist decode | wl-copy"
+
+        "$mod, period, global, quickshell:overviewEmojiToggle"
+
+        # ── Region / screenshot tools ──────────────────────────────────
+        "$mod SHIFT, S, global, quickshell:regionScreenshot"
+        "$mod SHIFT, S, exec, qs -c ii ipc call TEST_ALIVE || screenshot-region"
+
+        "$mod SHIFT, A, global, quickshell:regionSearch" # Google Lens
+        "$mod SHIFT, X, global, quickshell:regionOcr" # OCR → clipboard
+        "$mod SHIFT, T, global, quickshell:screenTranslate" # On-screen translate
+
+        # Fullscreen screenshot — always available, never goes through shell.
         "SHIFT, Print, exec, screenshot-full"
-        "$mod SHIFT, S, exec, screenshot-region"
+      ];
+
+      bindl = [
+        ",XF86AudioPlay, exec, playerctl play-pause"
+        ",XF86AudioNext, exec, playerctl next"
+        ",XF86AudioPrev, exec, playerctl previous"
+        # Screen recording (lockable so it survives lockscreen).
+        "$mod SHIFT, R, global, quickshell:regionRecord"
       ];
 
       bindm = [
@@ -191,21 +240,19 @@ in
       ];
 
       bindr = [
-        "SUPER, SUPER_L, exec, ags request toggle launcher"
+        # Tap-Super → launcher (Quickshell `search` panel).  Falls back to
+        # fuzzel if Quickshell isn't running.
+        "SUPER, SUPER_L, global, quickshell:searchToggleRelease"
       ];
 
       bindel = [
-        ",XF86AudioRaiseVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"
-        ",XF86AudioLowerVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
-        ",XF86AudioMute,        exec, wpctl set-mute   @DEFAULT_AUDIO_SINK@ toggle"
-        ",XF86MonBrightnessUp,  exec, brightnessctl s 5%+"
-        ",XF86MonBrightnessDown, exec, brightnessctl s 5%-"
-      ];
-
-      bindl = [
-        ",XF86AudioPlay,  exec, playerctl play-pause"
-        ",XF86AudioNext,  exec, playerctl next"
-        ",XF86AudioPrev,  exec, playerctl previous"
+        ",XF86AudioRaiseVolume,  exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"
+        ",XF86AudioLowerVolume,  exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
+        ",XF86AudioMute,         exec, wpctl set-mute   @DEFAULT_AUDIO_SINK@ toggle"
+        # Brightness keys: try Quickshell's brightness IPC first (drives the
+        # OSD), fall back to brightnessctl when the shell is down.
+        ",XF86MonBrightnessUp,   exec, qs -c ii ipc call brightness increment || brightnessctl s 5%+"
+        ",XF86MonBrightnessDown, exec, qs -c ii ipc call brightness decrement || brightnessctl s 5%-"
       ];
     };
   };
